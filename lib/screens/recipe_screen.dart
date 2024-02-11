@@ -42,6 +42,14 @@ class RecipeScreenState extends State<RecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Make a sorted copy of the ingredient list for each section
+    List<List<Ingredient>> sortedSectionIngredients = [];
+    for (RecipeSection section in widget.recipe.sections) {
+      // Copy the list of ingredients and sort it
+      List<Ingredient> sortedIngredients = List.from(section.ingredients);
+      sortedIngredients.sort((a, b) => a.typeName.compareTo(b.typeName));
+      sortedSectionIngredients.add(sortedIngredients);
+    }
     return PopScope(
         canPop: false,
         onPopInvoked: (bool didPop) {
@@ -55,228 +63,303 @@ class RecipeScreenState extends State<RecipeScreen> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(title: const Text('Home')),
+          appBar: AppBar(
+            title: Text(
+              widget.recipe.name,
+              style: const TextStyle(
+                fontSize: 24, // Increase the font size
+                fontWeight: FontWeight.bold, // Make the text bold
+              ),
+            ),
+          ),
           // Add a list view with the recipe sections
           body: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 80),
               child: Column(children: [
                 ListView.builder(
-                    scrollDirection: Axis.vertical,
+                    scrollDirection: Axis.vertical, 
                     shrinkWrap: true,
                     physics: const ClampingScrollPhysics(),
                     itemCount: widget.recipe.sections.length,
                     itemBuilder: (BuildContext context, int index) {
                       RecipeSection section = widget.recipe.sections[index];
+                      List<Ingredient> sortedIngredients =
+                          sortedSectionIngredients[index];
                       // Nest a list view with the ingredients in each section
-                      return Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              child: Text(section.name,
-                                  style: const TextStyle(
-                                      fontSize: 24, color: Colors.black)),
-                              onLongPress: () {
-                                // Allow user to rename or delete the section
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Rename section'),
-                                      content: TextField(
-                                        controller: TextEditingController(
-                                            text: section.name),
-                                        onChanged: (String value) {
-                                          setState(() {
-                                            section.name = value;
-                                          });
-                                        },
-                                      ),
-                                      actions: [
+                      return Card(
+                          elevation: 2.0, 
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                  width: double.infinity,
+                                  child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Spacer(),
+                                        TextButton(
+                                          child: Text(section.name,
+                                              style: const TextStyle(
+                                                  fontSize: 24,
+                                                  color: Colors.black)),
+                                          onLongPress: () {
+                                            // Allow user to rename or delete the section
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: const Text(
+                                                      'Rename section'),
+                                                  content: TextField(
+                                                    controller:
+                                                        TextEditingController(
+                                                            text: section.name),
+                                                    onChanged: (String value) {
+                                                      setState(() {
+                                                        section.name = value;
+                                                      });
+                                                    },
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          widget.recipe.sections
+                                                              .removeAt(index);
+                                                        });
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child:
+                                                          const Text('Delete'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child:
+                                                          const Text('Cancel'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text('Save'),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
+                                          onPressed: () {},
+                                        ),
+                                        const Spacer(),
+                                        // Move up or down the list
                                         TextButton(
                                           onPressed: () {
                                             setState(() {
-                                              widget.recipe.sections
-                                                  .removeAt(index);
+                                              if (index > 0) {
+                                                RecipeSection temp = widget
+                                                    .recipe.sections[index];
+                                                widget.recipe.sections[index] =
+                                                    widget.recipe
+                                                        .sections[index - 1];
+                                                widget.recipe
+                                                    .sections[index - 1] = temp;
+                                              }
                                             });
-                                            Navigator.pop(context);
                                           },
-                                          child: const Text('Delete'),
+                                          child: const Icon(Icons.arrow_upward),
                                         ),
                                         TextButton(
                                           onPressed: () {
-                                            Navigator.pop(context);
+                                            setState(() {
+                                              if (index <
+                                                  widget.recipe.sections
+                                                          .length -
+                                                      1) {
+                                                RecipeSection temp = widget
+                                                    .recipe.sections[index];
+                                                widget.recipe.sections[index] =
+                                                    widget.recipe
+                                                        .sections[index + 1];
+                                                widget.recipe
+                                                    .sections[index + 1] = temp;
+                                              }
+                                            });
                                           },
-                                          child: const Text('Cancel'),
+                                          child:
+                                              const Icon(Icons.arrow_downward),
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text('Save'),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              onPressed: () {},
-                            ),
-                          ),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const ClampingScrollPhysics(),
-                            itemCount: section.ingredients.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              Ingredient ingredient =
-                                  section.ingredients[index];
-                              IngredientType type = widget.state
-                                  .lookupIngredientType(ingredient.typeName);
-                              String formattedAmount = type.unit
-                                  .format(ingredient.amountAsType(type));
-                              return Dismissible(
-                                // Each Dismissible must contain a Key. Keys allow Flutter to
-                                // uniquely identify widgets.
-                                key: Key(type.name),
-                                // Provide a function that tells the app
-                                // what to do after an item has been swiped away.
-                                onDismissed: (direction) {
-                                  // Remove the item from the data source.
-                                  setState(() {
-                                    section.ingredients.removeAt(index);
-                                  });
+                                      ])),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const ClampingScrollPhysics(),
+                                itemCount: section.ingredients.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  Ingredient ingredient =
+                                      sortedIngredients[index];
+                                  IngredientType type = widget.state
+                                      .lookupIngredientType(
+                                          ingredient.typeName);
+                                  String formattedAmount = type.unit
+                                      .format(ingredient.amountAsType(type));
+                                  return Dismissible(
+                                    // Each Dismissible must contain a Key. Keys allow Flutter to
+                                    // uniquely identify widgets.
+                                    key: Key(type.name),
+                                    // Provide a function that tells the app
+                                    // what to do after an item has been swiped away.
+                                    onDismissed: (direction) {
+                                      // Remove the item from the data source.
+                                      setState(() {
+                                        section.ingredients.removeAt(index);
+                                      });
 
-                                  // Then show a snackbar.
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              '${type.displayName} dismissed')));
-                                },
-                                child: ListTile(
-                                  title: Text(
-                                      '${type.displayName}: $formattedAmount${type.unit.separator}${type.unit.name}',
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold)),
-                                  onTap: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            IngredientModificationScreen(
-                                          ingredient: ingredient,
-                                          displayType: widget.state
-                                              .lookupIngredientType(
-                                                  ingredient.typeName),
-                                          sectionName: section.name,
-                                        ),
-                                      ),
-                                    );
-                                    setState(() {
-                                      // Update the screen with the new ingredient
-                                    });
-                                  },
-                                ),
-                                confirmDismiss:
-                                    (DismissDirection direction) async {
-                                  return await showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: const Text("Confirm"),
-                                        content: Text(
-                                            "Are you sure you wish to delete ${type.name}?"),
-                                        actions: <Widget>[
-                                          TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(context)
-                                                      .pop(true),
-                                              child: const Text("DELETE")),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(context)
-                                                    .pop(false),
-                                            child: const Text("CANCEL"),
+                                      // Then show a snackbar.
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(
+                                                  '${type.displayName} dismissed')));
+                                    },
+                                    child: ListTile(
+                                      title: Text(
+                                          '${type.displayName}: $formattedAmount${type.unit.separator}${type.unit.name}',
+                                          style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
+                                      onTap: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                IngredientModificationScreen(
+                                              ingredient: ingredient,
+                                              displayType: widget.state
+                                                  .lookupIngredientType(
+                                                      ingredient.typeName),
+                                              sectionName: section.name,
+                                            ),
                                           ),
-                                        ],
+                                        );
+                                        setState(() {
+                                          // Remove the ingredient if it has no amount
+                                          if (ingredient.amountG == 0) {
+                                            section.ingredients.remove(ingredient);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    confirmDismiss:
+                                        (DismissDirection direction) async {
+                                      return await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text("Confirm"),
+                                            content: Text(
+                                                "Are you sure you wish to delete ${type.name}?"),
+                                            actions: <Widget>[
+                                              TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(true),
+                                                  child: const Text("DELETE")),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.of(context)
+                                                        .pop(false),
+                                                child: const Text("CANCEL"),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       );
                                     },
                                   );
                                 },
-                              );
-                            },
-                          ),
-                          // Add a button to add a new ingredient
-                          ElevatedButton(
-                            onPressed: () async {
-                              IngredientType? type = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      IngredientTypeSelectionScreen(
-                                    state: widget.state,
-                                  ),
-                                ),
-                              );
-                              if (type != null) {
-                                // Make sure the ingredient doesn't already exist
-                                if (section.ingredients.any((element) =>
-                                    element.typeName.toLowerCase() ==
-                                    type.name)) {
-                                  // Show the modification screen
-                                  Ingredient ingredient = section.ingredients
-                                      .firstWhere((element) =>
-                                          element.typeName.toLowerCase() ==
-                                          type.name);
-
-                                  if (context.mounted) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            IngredientModificationScreen(
-                                          ingredient: ingredient,
-                                          displayType: widget.state
-                                              .lookupIngredientType(
-                                                  ingredient.typeName),
-                                          sectionName: section.name,
-                                        ),
-                                      ),
-                                    ).then((value) => setState(() {}));
-                                  }
-                                  return;
-                                }
-                                Ingredient ingredient =
-                                    Ingredient(type.name, 0);
-                                setState(() {
-                                  // Add the new ingredient to the recipe
-                                  section.ingredients.add(ingredient);
-                                });
-                                if (context.mounted) {
-                                  Navigator.push(
+                              ),
+                              // Add a button to add a new ingredient
+                              ElevatedButton(
+                                onPressed: () async {
+                                  IngredientType? type = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          IngredientModificationScreen(
-                                        ingredient: ingredient,
-                                        displayType: widget.state
-                                            .lookupIngredientType(
-                                                ingredient.typeName),
-                                        sectionName: section.name,
+                                          IngredientTypeSelectionScreen(
+                                        state: widget.state,
                                       ),
                                     ),
-                                  ).then((value) => setState(() {}));
-                                }
-                              } else {
-                                setState(() {
-                                  // Make sure if an ingredient was modified, the screen is still updated
-                                });
-                              }
-                            },
-                            child: const Text('Add ingredient'),
-                          ),
-                        ],
-                      );
+                                  );
+                                  if (type != null) {
+                                    // Make sure the ingredient doesn't already exist
+                                    if (section.ingredients.any((element) =>
+                                        element.typeName.toLowerCase() ==
+                                        type.name)) {
+                                      // Show the modification screen
+                                      Ingredient ingredient = section
+                                          .ingredients
+                                          .firstWhere((element) =>
+                                              element.typeName.toLowerCase() ==
+                                              type.name);
+
+                                      if (context.mounted) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                IngredientModificationScreen(
+                                              ingredient: ingredient,
+                                              displayType: widget.state
+                                                  .lookupIngredientType(
+                                                      ingredient.typeName),
+                                              sectionName: section.name,
+                                            ),
+                                          ),
+                                        ).then((value) => setState(() {
+                                          // Remove the ingredient if it has no amount
+                                          if (ingredient.amountG == 0) {
+                                            section.ingredients.remove(ingredient);
+                                          }
+                                        }));
+                                      }
+                                      return;
+                                    }
+                                    Ingredient ingredient =
+                                        Ingredient(type.name, 0);
+                                    setState(() {
+                                      // Add the new ingredient to the recipe
+                                      section.ingredients.add(ingredient);
+                                    });
+                                    if (context.mounted) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              IngredientModificationScreen(
+                                            ingredient: ingredient,
+                                            displayType: widget.state
+                                                .lookupIngredientType(
+                                                    ingredient.typeName),
+                                            sectionName: section.name,
+                                          ),
+                                        ),
+                                      ).then((value) => setState(() {
+                                        // Remove the ingredient if it has no amount
+                                        if (ingredient.amountG == 0) {
+                                          section.ingredients.remove(ingredient);
+                                        }
+                                      }));
+                                    }
+                                  } else {
+                                    setState(() {
+                                      // Make sure if an ingredient was modified, the screen is still updated
+                                    });
+                                  }
+                                },
+                                child: const Text('Add ingredient'),
+                              ),
+                            ],
+                          ));
                     }),
                 // Add the cooking steps
                 ListView.builder(
@@ -301,25 +384,57 @@ class RecipeScreenState extends State<RecipeScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('${step.name} dismissed')));
                       },
-                      child: ListTile(
-                        title: Text(
-                            '${step.name}: ${step.time} minutes at ${step.temperature} degrees',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CookingStepModificationScreen(
-                                step: step,
+                      child: Card(
+                        elevation: 2.0,
+                        child: ListTile(
+                          title: Text(
+                            '${step.name}: ${step.time} minutes${step.temperature != 0 ? ' at ${step.temperature} degrees' : ''}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min, // This will make the Row as small as possible
+                            children: <Widget>[
+                              // Move up or down the list
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (index > 0) {
+                                      CookingStep temp = widget.recipe.cookingSteps[index];
+                                      widget.recipe.cookingSteps[index] = widget.recipe.cookingSteps[index - 1];
+                                      widget.recipe.cookingSteps[index - 1] = temp;
+                                    }
+                                  });
+                                },
+                                child: const Icon(Icons.arrow_upward),
                               ),
-                            ),
-                          );
-                          setState(() {
-                            // Update the screen with the new ingredient
-                          });
-                        },
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (index < widget.recipe.cookingSteps.length - 1) {
+                                      CookingStep temp = widget.recipe.cookingSteps[index];
+                                      widget.recipe.cookingSteps[index] = widget.recipe.cookingSteps[index + 1];
+                                      widget.recipe.cookingSteps[index + 1] = temp;
+                                    }
+                                  });
+                                },
+                                child: const Icon(Icons.arrow_downward),
+                              ),
+                            ],
+                          ),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CookingStepModificationScreen(
+                                  step: step,
+                                ),
+                              ),
+                            );
+                            setState(() {
+                              // Update the screen with the new ingredient
+                            });
+                          },
+                        ),
                       ),
                       confirmDismiss: (DismissDirection direction) async {
                         return await showDialog(

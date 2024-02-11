@@ -31,6 +31,10 @@ flutter_launcher_icons:
     image_path: "assets/icon.png"
     background_color: "#hexcode"
     theme_color: "#hexcode"
+  linux:
+    generate: true
+    image_path: "assets/icon.png"
+    icon_size: 64 # min:48, max:256, default: 48
   windows:
     generate: true
     image_path: "assets/icon.png"

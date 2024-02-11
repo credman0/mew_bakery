@@ -3,7 +3,7 @@ import '../types.dart';
 
 class IngredientTypeCreationScreen extends StatefulWidget {
   final RecipesState state;
-  IngredientType ingredientType = const IngredientType('', IngredientUnit.g);
+  IngredientType ingredientType = IngredientType('', IngredientUnit.g);
 
   IngredientTypeCreationScreen({Key? key, required this.state})
       : super(key: key);
