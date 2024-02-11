@@ -1,3 +1,3 @@
-# mew_backery
+# mew_bakery
 
 A new Flutter project.

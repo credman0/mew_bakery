@@ -1,4 +1,4 @@
-package com.example.mew_backery
+package com.credman.mew_bakery
 
 import io.flutter.embedding.android.FlutterActivity
 
